@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexus AI | Browser-Native Chat</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&family=Plus+Jakarta+Sans:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo">
+                <div class="logo-icon"></div>
+                <h1>Nexus<span>AI</span></h1>
+            </div>
+            <button class="new-chat-btn" id="new-chat">
+                <span class="plus-icon">+</span> New Chat
+            </button>
+            <div class="chat-history" id="chat-history">
+                <!-- Chat history items will appear here -->
+            </div>
+            <div class="model-status" id="model-status">
+                <div class="status-header">
+                    <span class="status-dot"></span>
+                    <span id="status-text">Initializing Model...</span>
+                </div>
+                <div class="progress-bar-container">
+                    <div class="progress-bar" id="progress-bar"></div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Chat Area -->
+        <main class="chat-main">
+            <header class="chat-header">
+                <div class="chat-info">
+                    <h2>Current Conversation</h2>
+                    <p id="model-name">Llama-3-8B-Instruct</p>
+                </div>
+                <div class="header-actions">
+                    <button class="icon-btn" title="Settings">⚙️</button>
+                </div>
+            </header>
+
+            <div class="messages-container" id="messages">
+                <div class="welcome-screen" id="welcome-screen">
+                    <div class="welcome-icon">✨</div>
+                    <h2>Welcome to Nexus AI</h2>
+                    <p>Experience local-first, private AI directly in your browser.</p>
+                    <div class="features">
+                        <div class="feature-card">
+                            <span>🔒</span>
+                            <h3>100% Private</h3>
+                            <p>Data never leaves your device</p>
+                        </div>
+                        <div class="feature-card">
+                            <span>🚀</span>
+                            <h3>WebGPU Powered</h3>
+                            <p>Hardware accelerated speed</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <footer class="chat-footer">
+                <div class="input-wrapper">
+                    <textarea id="user-input" placeholder="Type a message..." rows="1"></textarea>
+                    <button id="send-btn" disabled>
+                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M22 2L11 13M22 2L15 22L11 13M11 13L2 9L22 2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </button>
+                </div>
+                <p class="disclaimer">Nexus AI uses WebGPU for local inference. Results may vary based on hardware.</p>
+            </footer>
+        </main>
+    </div>
+    <!-- Web-LLM Script -->
+    <script type="module" src="app.js"></script>
+</body>
+</html>
