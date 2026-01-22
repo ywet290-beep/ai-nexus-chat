@@ -54,6 +54,11 @@ async function initEngine() {
             }
         };
 
+        // Check for WebGPU availability
+        if (!navigator.gpu) {
+            throw new Error("WebGPU not available - browser or environment doesn't support it");
+        }
+
         // Initialize with proper model registry
         engine = await webllm.CreateMLCEngine(selectedModel, {
             initProgressCallback: initProgressCallback,
@@ -72,20 +77,34 @@ async function initEngine() {
         console.log("✅ Model Ready: " + selectedModel);
     } catch (error) {
         console.error("Failed to load model:", error);
-        statusText.innerText = "⚠️ GPU Required";
+        statusText.innerText = "⚠️ WebGPU Required";
         statusDot.style.background = "#ff4d4d";
         sendBtn.disabled = true;
         
-        // Show persistent help
+        // Show persistent help overlay
         const helpMsg = document.createElement("div");
-        helpMsg.style.cssText = "position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(255,77,77,0.95); color: white; padding: 20px; border-radius: 12px; max-width: 400px; text-align: center; z-index: 9999; font-size: 12px; line-height: 1.6; font-family: monospace;";
+        helpMsg.style.cssText = "position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 20px;";
         helpMsg.innerHTML = `
-            <strong>⚠️ Browser GPU Not Available</strong><br>
-            <small style="display: block; margin-top: 10px;">
-                <strong>Chrome/Edge:</strong> DevTools (F12) → ⚙️ Settings → Experiments → Enable "Unsafe WebGPU"<br>
-                <strong>Firefox:</strong> about:config → dom.webgpu.enabled = true<br>
-                <strong>Safari:</strong> Develop → WebGPU Experimental Features
-            </small>
+            <div style="background: #1a1a1a; color: white; padding: 30px; border-radius: 16px; max-width: 500px; border: 2px solid #ff4d4d; text-align: center; font-family: 'Plus Jakarta Sans', sans-serif;">
+                <h2 style="margin: 0 0 20px 0; color: #ff4d4d;">⚠️ GPU Not Available</h2>
+                <p style="margin: 0 0 20px 0; color: #aaa; line-height: 1.6;">This browser or environment doesn't support WebGPU. You need to use a modern browser with GPU acceleration.</p>
+                
+                <div style="background: #222; padding: 20px; border-radius: 12px; margin: 20px 0; text-align: left;">
+                    <p style="margin: 0 0 15px 0; font-weight: 600; color: #7c4dff;">✅ Recommended:</p>
+                    <p style="margin: 0; font-size: 13px; color: #bbb;"><strong>Chrome/Edge:</strong> Latest version</p>
+                    <p style="margin: 10px 0 0 0; font-size: 12px; color: #999;">DevTools (F12) → ⚙️ → Experiments → Enable "Unsafe WebGPU"</p>
+                </div>
+                
+                <div style="background: #222; padding: 20px; border-radius: 12px; margin: 20px 0; text-align: left;">
+                    <p style="margin: 0 0 15px 0; font-weight: 600; color: #7c4dff;">✅ Alternative:</p>
+                    <p style="margin: 0; font-size: 13px; color: #bbb;"><strong>Firefox:</strong> Type in address bar:</p>
+                    <p style="margin: 10px 0 0 0; padding: 10px; background: #1a1a1a; border-radius: 8px; font-family: monospace; font-size: 12px; color: #0f0; word-break: break-all;">about:config</p>
+                    <p style="margin: 10px 0 0 0; font-size: 12px; color: #999;">Search "dom.webgpu.enabled" and toggle to <strong>true</strong></p>
+                </div>
+                
+                <a href="https://ywet290-beep.github.io/ai-nexus-chat" target="_blank" style="display: inline-block; background: #7c4dff; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; margin-top: 20px; font-weight: 600; border: none; cursor: pointer;">Open in New Tab</a>
+                <p style="margin: 15px 0 0 0; font-size: 12px; color: #999;">Try opening in Chrome/Edge with WebGPU enabled</p>
+            </div>
         `;
         document.body.appendChild(helpMsg);
     }
