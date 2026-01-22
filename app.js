@@ -40,6 +40,7 @@ modelChoice.addEventListener("change", async (e) => {
 async function initEngine() {
     try {
         statusText.innerText = "Downloading & Loading Model...";
+        statusDot.style.background = "#ffaa00";
 
         // Callback for loading progress
         const initProgressCallback = (report) => {
@@ -53,36 +54,40 @@ async function initEngine() {
             }
         };
 
-        // Try with WebGPU first
+        // Create engine with multiple fallback options
+        let engineConfig = { 
+            initProgressCallback,
+            appConfig: {
+                "model_lib_map": {}
+            }
+        };
+
         try {
-            engine = await webllm.CreateMLCEngine(
-                selectedModel,
-                { 
-                    initProgressCallback,
-                    appConfig: {
-                        "model_lib_map": {}
-                    }
-                }
-            );
+            // Try WebGPU first
+            engine = await webllm.CreateMLCEngine(selectedModel, engineConfig);
+            console.log("✅ Using WebGPU");
         } catch (gpuError) {
-            // Fallback to WebGL if WebGPU fails
-            console.log("WebGPU failed, trying WebGL fallback...");
+            console.log("WebGPU unavailable, trying WebGL...", gpuError.message);
             statusText.innerText = "Using WebGL (slower)...";
             
-            engine = await webllm.CreateMLCEngine(
-                selectedModel,
-                { 
-                    initProgressCallback,
-                    appConfig: {
-                        "model_lib_map": {},
-                        "device": "webgl"
-                    }
-                }
-            );
+            try {
+                // Fallback to WebGL
+                engineConfig.appConfig.device = "webgl";
+                engine = await webllm.CreateMLCEngine(selectedModel, engineConfig);
+                console.log("✅ Using WebGL");
+            } catch (webglError) {
+                console.log("WebGL failed, trying CPU...", webglError.message);
+                statusText.innerText = "Using CPU (very slow)...";
+                
+                // Last resort: CPU only
+                engineConfig.appConfig.device = "cpu";
+                engine = await webllm.CreateMLCEngine(selectedModel, engineConfig);
+                console.log("✅ Using CPU fallback");
+            }
         }
 
-        statusText.innerText = "Ready to Chat";
-        statusDot.style.background = "#00ff88"; // Solid green
+        statusText.innerText = "✅ Ready to Chat";
+        statusDot.style.background = "#00ff88";
         progressBar.style.width = "100%";
         sendBtn.disabled = false;
         modelName.innerText = AVAILABLE_MODELS[selectedModel] || selectedModel;
@@ -94,29 +99,22 @@ async function initEngine() {
         console.log("✅ Model Downloaded & Ready: " + selectedModel);
     } catch (error) {
         console.error("Failed to load model:", error);
-        
-        // Check if WebGPU is disabled
-        const hasWebGPU = navigator.gpu !== undefined;
-        
-        if (!hasWebGPU) {
-            statusText.innerText = "⚠️ Enable WebGPU to use this app";
-            statusDot.style.background = "#ffaa00";
-            
-            // Show help message
-            const helpMsg = document.createElement("div");
-            helpMsg.style.cssText = "position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(255,170,0,0.9); color: #000; padding: 15px; border-radius: 8px; max-width: 300px; text-align: center; z-index: 9999; font-size: 12px;";
-            helpMsg.innerHTML = `
-                <strong>WebGPU Not Available</strong><br>
-                <small>Chrome/Edge: DevTools → ⚙️ → Experiments → "Unsafe WebGPU"<br>
-                Firefox: about:config → "dom.webgpu.enabled" = true</small>
-            `;
-            document.body.appendChild(helpMsg);
-        } else {
-            statusText.innerText = "❌ GPU Not Supported";
-            statusDot.style.background = "#ff4d4d";
-        }
-        
+        statusText.innerText = "⚠️ GPU Required - Use Chrome/Edge with WebGPU enabled";
+        statusDot.style.background = "#ff4d4d";
         sendBtn.disabled = true;
+        
+        // Show persistent help
+        const helpMsg = document.createElement("div");
+        helpMsg.style.cssText = "position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(255,77,77,0.95); color: white; padding: 20px; border-radius: 12px; max-width: 350px; text-align: center; z-index: 9999; font-size: 13px; line-height: 1.6;";
+        helpMsg.innerHTML = `
+            <strong>⚠️ GPU Not Available</strong><br>
+            <small style="display: block; margin-top: 10px;">
+                <strong>Chrome/Edge:</strong> Open DevTools (F12) → Click ⚙️ → Go to "Experiments" → Search "WebGPU" → Enable it<br>
+                <strong>Firefox:</strong> Type about:config → Search "dom.webgpu" → Toggle to true<br>
+                <strong>Safari:</strong> Enable WebGPU in Develop menu
+            </small>
+        `;
+        document.body.appendChild(helpMsg);
     }
 }
 
@@ -190,34 +188,15 @@ userInput.addEventListener("input", function () {
 });
 
 // Start initialization immediately (not waiting for page load)
-document.addEventListener("DOMContentLoaded", () => {
-    // Check WebGPU support before loading
-    const checkWebGPU = async () => {
-        if (!navigator.gpu) {
-            statusText.innerText = "⚠️ Enabling WebGPU...";
-            statusDot.style.background = "#ffaa00";
-            console.warn("WebGPU not available. Trying to fallback...");
-        }
-        await initEngine();
-    };
-    
-    checkWebGPU();
-});
+const startInit = async () => {
+    if (!navigator.gpu) {
+        console.warn("⚠️ WebGPU not available - will attempt fallback");
+    }
+    await initEngine();
+};
 
 if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", async () => {
-        if (!navigator.gpu) {
-            statusText.innerText = "⚠️ Enabling WebGPU...";
-            statusDot.style.background = "#ffaa00";
-        }
-        await initEngine();
-    });
+    document.addEventListener("DOMContentLoaded", startInit);
 } else {
-    (async () => {
-        if (!navigator.gpu) {
-            statusText.innerText = "⚠️ Enabling WebGPU...";
-            statusDot.style.background = "#ffaa00";
-        }
-        await initEngine();
-    })();
+    startInit();
 }
