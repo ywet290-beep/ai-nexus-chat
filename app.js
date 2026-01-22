@@ -1,7 +1,14 @@
 import * as webllm from "https://esm.run/@mlc-ai/web-llm";
 
-// Constants
-const MODEL_ID = "Llama-3-8B-Instruct-q4f16_1-MLC";
+// Model options
+const AVAILABLE_MODELS = {
+    "Llama-3-8B-Instruct-q4f16_1-MLC": "Llama 3 8B",
+    "Phi-3-mini-4k-instruct-q4f16_1-MLC": "Phi 3 Mini",
+    "Llama-2-7B-chat-hf-q4f16_1-MLC": "Llama 2 7B",
+    "Mistral-7B-Instruct-v0.2-q4f16_1-MLC": "Mistral 7B"
+};
+
+let selectedModel = localStorage.getItem("selectedModel") || "Llama-3-8B-Instruct-q4f16_1-MLC";
 
 // DOM Elements
 const messagesContainer = document.getElementById("messages");
@@ -12,8 +19,22 @@ const statusDot = document.querySelector(".status-dot");
 const statusText = document.getElementById("status-text");
 const progressBar = document.getElementById("progress-bar");
 const welcomeScreen = document.getElementById("welcome-screen");
+const modelChoice = document.getElementById("model-choice");
+const modelName = document.getElementById("model-name");
 
 let engine = null;
+
+// Handle model selection change
+modelChoice.addEventListener("change", async (e) => {
+    selectedModel = e.target.value;
+    localStorage.setItem("selectedModel", selectedModel);
+    statusText.innerText = "Loading model...";
+    statusDot.style.background = "#ffaa00";
+    progressBar.style.width = "0%";
+    sendBtn.disabled = true;
+    engine = null;
+    await initEngine();
+});
 
 // Initialize Engine
 async function initEngine() {
@@ -33,7 +54,7 @@ async function initEngine() {
         };
 
         engine = await webllm.CreateMLCEngine(
-            MODEL_ID,
+            selectedModel,
             { initProgressCallback }
         );
 
@@ -41,6 +62,8 @@ async function initEngine() {
         statusDot.style.background = "#00ff88"; // Solid green
         progressBar.style.width = "100%";
         sendBtn.disabled = false;
+        modelName.innerText = AVAILABLE_MODELS[selectedModel] || selectedModel;
+        modelChoice.value = selectedModel;
 
         console.log("Web-LLM Engine Loaded Successfully");
     } catch (error) {

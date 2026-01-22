@@ -23,6 +23,15 @@
             <div class="chat-history" id="chat-history">
                 <!-- Chat history items will appear here -->
             </div>
+            <div class="model-selector" id="model-selector">
+                <label for="model-choice">Select Model:</label>
+                <select id="model-choice">
+                    <option value="Llama-3-8B-Instruct-q4f16_1-MLC">Llama 3 8B (Default)</option>
+                    <option value="Phi-3-mini-4k-instruct-q4f16_1-MLC">Phi 3 Mini (Fast)</option>
+                    <option value="Llama-2-7B-chat-hf-q4f16_1-MLC">Llama 2 7B (Chat)</option>
+                    <option value="Mistral-7B-Instruct-v0.2-q4f16_1-MLC">Mistral 7B (Advanced)</option>
+                </select>
+            </div>
             <div class="model-status" id="model-status">
                 <div class="status-header">
                     <span class="status-dot"></span>
