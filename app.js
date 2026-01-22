@@ -53,15 +53,33 @@ async function initEngine() {
             }
         };
 
-        engine = await webllm.CreateMLCEngine(
-            selectedModel,
-            { 
-                initProgressCallback,
-                appConfig: {
-                    "model_lib_map": {}
+        // Try with WebGPU first
+        try {
+            engine = await webllm.CreateMLCEngine(
+                selectedModel,
+                { 
+                    initProgressCallback,
+                    appConfig: {
+                        "model_lib_map": {}
+                    }
                 }
-            }
-        );
+            );
+        } catch (gpuError) {
+            // Fallback to WebGL if WebGPU fails
+            console.log("WebGPU failed, trying WebGL fallback...");
+            statusText.innerText = "Using WebGL (slower)...";
+            
+            engine = await webllm.CreateMLCEngine(
+                selectedModel,
+                { 
+                    initProgressCallback,
+                    appConfig: {
+                        "model_lib_map": {},
+                        "device": "webgl"
+                    }
+                }
+            );
+        }
 
         statusText.innerText = "Ready to Chat";
         statusDot.style.background = "#00ff88"; // Solid green
@@ -75,9 +93,30 @@ async function initEngine() {
 
         console.log("✅ Model Downloaded & Ready: " + selectedModel);
     } catch (error) {
-        console.error("Failed to download model:", error);
-        statusText.innerText = "Download Failed - Check Connection";
-        statusDot.style.background = "#ff4d4d";
+        console.error("Failed to load model:", error);
+        
+        // Check if WebGPU is disabled
+        const hasWebGPU = navigator.gpu !== undefined;
+        
+        if (!hasWebGPU) {
+            statusText.innerText = "⚠️ Enable WebGPU to use this app";
+            statusDot.style.background = "#ffaa00";
+            
+            // Show help message
+            const helpMsg = document.createElement("div");
+            helpMsg.style.cssText = "position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(255,170,0,0.9); color: #000; padding: 15px; border-radius: 8px; max-width: 300px; text-align: center; z-index: 9999; font-size: 12px;";
+            helpMsg.innerHTML = `
+                <strong>WebGPU Not Available</strong><br>
+                <small>Chrome/Edge: DevTools → ⚙️ → Experiments → "Unsafe WebGPU"<br>
+                Firefox: about:config → "dom.webgpu.enabled" = true</small>
+            `;
+            document.body.appendChild(helpMsg);
+        } else {
+            statusText.innerText = "❌ GPU Not Supported";
+            statusDot.style.background = "#ff4d4d";
+        }
+        
+        sendBtn.disabled = true;
     }
 }
 
@@ -151,9 +190,34 @@ userInput.addEventListener("input", function () {
 });
 
 // Start initialization immediately (not waiting for page load)
-document.addEventListener("DOMContentLoaded", initEngine);
+document.addEventListener("DOMContentLoaded", () => {
+    // Check WebGPU support before loading
+    const checkWebGPU = async () => {
+        if (!navigator.gpu) {
+            statusText.innerText = "⚠️ Enabling WebGPU...";
+            statusDot.style.background = "#ffaa00";
+            console.warn("WebGPU not available. Trying to fallback...");
+        }
+        await initEngine();
+    };
+    
+    checkWebGPU();
+});
+
 if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", initEngine);
+    document.addEventListener("DOMContentLoaded", async () => {
+        if (!navigator.gpu) {
+            statusText.innerText = "⚠️ Enabling WebGPU...";
+            statusDot.style.background = "#ffaa00";
+        }
+        await initEngine();
+    });
 } else {
-    initEngine();
+    (async () => {
+        if (!navigator.gpu) {
+            statusText.innerText = "⚠️ Enabling WebGPU...";
+            statusDot.style.background = "#ffaa00";
+        }
+        await initEngine();
+    })();
 }
