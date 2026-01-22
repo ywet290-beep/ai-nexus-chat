@@ -91,5 +91,19 @@
     </div>
     <!-- Web-LLM Script -->
     <script type="module" src="app.js"></script>
+    <!-- Register Service Worker for Model Caching -->
+    <script>
+        if ("serviceWorker" in navigator) {
+            window.addEventListener("load", () => {
+                navigator.serviceWorker.register("sw.js", { scope: "/ai-nexus-chat/" })
+                    .then((reg) => {
+                        console.log("✅ Service Worker registered for offline model access");
+                    })
+                    .catch((err) => {
+                        console.log("Service Worker registration failed:", err);
+                    });
+            });
+        }
+    </script>
 </body>
 </html>

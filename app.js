@@ -28,7 +28,7 @@ let engine = null;
 modelChoice.addEventListener("change", async (e) => {
     selectedModel = e.target.value;
     localStorage.setItem("selectedModel", selectedModel);
-    statusText.innerText = "Loading model...";
+    statusText.innerText = "Downloading model...";
     statusDot.style.background = "#ffaa00";
     progressBar.style.width = "0%";
     sendBtn.disabled = true;
@@ -39,7 +39,7 @@ modelChoice.addEventListener("change", async (e) => {
 // Initialize Engine with aggressive caching
 async function initEngine() {
     try {
-        statusText.innerText = "Loading Model...";
+        statusText.innerText = "Downloading & Loading Model...";
 
         // Callback for loading progress
         const initProgressCallback = (report) => {
@@ -63,17 +63,20 @@ async function initEngine() {
             }
         );
 
-        statusText.innerText = "Ready";
+        statusText.innerText = "Ready to Chat";
         statusDot.style.background = "#00ff88"; // Solid green
         progressBar.style.width = "100%";
         sendBtn.disabled = false;
         modelName.innerText = AVAILABLE_MODELS[selectedModel] || selectedModel;
         modelChoice.value = selectedModel;
+        
+        // Store model as downloaded
+        localStorage.setItem(`model_cached_${selectedModel}`, "true");
 
-        console.log("✅ Web-LLM Engine Loaded Successfully");
+        console.log("✅ Model Downloaded & Ready: " + selectedModel);
     } catch (error) {
-        console.error("Failed to load engine:", error);
-        statusText.innerText = "WebGPU Not Supported";
+        console.error("Failed to download model:", error);
+        statusText.innerText = "Download Failed - Check Connection";
         statusDot.style.background = "#ff4d4d";
     }
 }
