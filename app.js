@@ -36,10 +36,10 @@ modelChoice.addEventListener("change", async (e) => {
     await initEngine();
 });
 
-// Initialize Engine
+// Initialize Engine with aggressive caching
 async function initEngine() {
     try {
-        statusText.innerText = "Initializing Engine...";
+        statusText.innerText = "Loading Model...";
 
         // Callback for loading progress
         const initProgressCallback = (report) => {
@@ -55,17 +55,22 @@ async function initEngine() {
 
         engine = await webllm.CreateMLCEngine(
             selectedModel,
-            { initProgressCallback }
+            { 
+                initProgressCallback,
+                appConfig: {
+                    "model_lib_map": {}
+                }
+            }
         );
 
-        statusText.innerText = "Online";
+        statusText.innerText = "Ready";
         statusDot.style.background = "#00ff88"; // Solid green
         progressBar.style.width = "100%";
         sendBtn.disabled = false;
         modelName.innerText = AVAILABLE_MODELS[selectedModel] || selectedModel;
         modelChoice.value = selectedModel;
 
-        console.log("Web-LLM Engine Loaded Successfully");
+        console.log("✅ Web-LLM Engine Loaded Successfully");
     } catch (error) {
         console.error("Failed to load engine:", error);
         statusText.innerText = "WebGPU Not Supported";
@@ -142,5 +147,10 @@ userInput.addEventListener("input", function () {
     this.style.height = (this.scrollHeight) + "px";
 });
 
-// Start initialization on load
-window.addEventListener("load", initEngine);
+// Start initialization immediately (not waiting for page load)
+document.addEventListener("DOMContentLoaded", initEngine);
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initEngine);
+} else {
+    initEngine();
+}
