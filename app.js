@@ -1,14 +1,14 @@
 import * as webllm from "https://esm.run/@mlc-ai/web-llm";
 
-// Model options
+// Available models with proper registry
 const AVAILABLE_MODELS = {
-    "Llama-3-8B-Instruct-q4f16_1-MLC": "Llama 3 8B",
-    "Phi-3-mini-4k-instruct-q4f16_1-MLC": "Phi 3 Mini",
     "Llama-2-7B-chat-hf-q4f16_1-MLC": "Llama 2 7B",
-    "Mistral-7B-Instruct-v0.2-q4f16_1-MLC": "Mistral 7B"
+    "Llama-3-8B-Instruct-q4f16_1-MLC": "Llama 3 8B",
+    "Mistral-7B-Instruct-v0.2-q4f16_1-MLC": "Mistral 7B",
+    "phi-2-q4f16_1-MLC": "Phi 2 (Fast)"
 };
 
-let selectedModel = localStorage.getItem("selectedModel") || "Llama-3-8B-Instruct-q4f16_1-MLC";
+let selectedModel = localStorage.getItem("selectedModel") || "Llama-2-7B-chat-hf-q4f16_1-MLC";
 
 // DOM Elements
 const messagesContainer = document.getElementById("messages");
@@ -39,7 +39,7 @@ modelChoice.addEventListener("change", async (e) => {
 // Initialize Engine with aggressive caching
 async function initEngine() {
     try {
-        statusText.innerText = "Downloading & Loading Model...";
+        statusText.innerText = "Loading Model...";
         statusDot.style.background = "#ffaa00";
 
         // Callback for loading progress
@@ -54,37 +54,10 @@ async function initEngine() {
             }
         };
 
-        // Create engine with multiple fallback options
-        let engineConfig = { 
-            initProgressCallback,
-            appConfig: {
-                "model_lib_map": {}
-            }
-        };
-
-        try {
-            // Try WebGPU first
-            engine = await webllm.CreateMLCEngine(selectedModel, engineConfig);
-            console.log("✅ Using WebGPU");
-        } catch (gpuError) {
-            console.log("WebGPU unavailable, trying WebGL...", gpuError.message);
-            statusText.innerText = "Using WebGL (slower)...";
-            
-            try {
-                // Fallback to WebGL
-                engineConfig.appConfig.device = "webgl";
-                engine = await webllm.CreateMLCEngine(selectedModel, engineConfig);
-                console.log("✅ Using WebGL");
-            } catch (webglError) {
-                console.log("WebGL failed, trying CPU...", webglError.message);
-                statusText.innerText = "Using CPU (very slow)...";
-                
-                // Last resort: CPU only
-                engineConfig.appConfig.device = "cpu";
-                engine = await webllm.CreateMLCEngine(selectedModel, engineConfig);
-                console.log("✅ Using CPU fallback");
-            }
-        }
+        // Initialize with proper model registry
+        engine = await webllm.CreateMLCEngine(selectedModel, {
+            initProgressCallback: initProgressCallback,
+        });
 
         statusText.innerText = "✅ Ready to Chat";
         statusDot.style.background = "#00ff88";
@@ -96,22 +69,22 @@ async function initEngine() {
         // Store model as downloaded
         localStorage.setItem(`model_cached_${selectedModel}`, "true");
 
-        console.log("✅ Model Downloaded & Ready: " + selectedModel);
+        console.log("✅ Model Ready: " + selectedModel);
     } catch (error) {
         console.error("Failed to load model:", error);
-        statusText.innerText = "⚠️ GPU Required - Use Chrome/Edge with WebGPU enabled";
+        statusText.innerText = "⚠️ GPU Required";
         statusDot.style.background = "#ff4d4d";
         sendBtn.disabled = true;
         
         // Show persistent help
         const helpMsg = document.createElement("div");
-        helpMsg.style.cssText = "position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(255,77,77,0.95); color: white; padding: 20px; border-radius: 12px; max-width: 350px; text-align: center; z-index: 9999; font-size: 13px; line-height: 1.6;";
+        helpMsg.style.cssText = "position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(255,77,77,0.95); color: white; padding: 20px; border-radius: 12px; max-width: 400px; text-align: center; z-index: 9999; font-size: 12px; line-height: 1.6; font-family: monospace;";
         helpMsg.innerHTML = `
-            <strong>⚠️ GPU Not Available</strong><br>
+            <strong>⚠️ Browser GPU Not Available</strong><br>
             <small style="display: block; margin-top: 10px;">
-                <strong>Chrome/Edge:</strong> Open DevTools (F12) → Click ⚙️ → Go to "Experiments" → Search "WebGPU" → Enable it<br>
-                <strong>Firefox:</strong> Type about:config → Search "dom.webgpu" → Toggle to true<br>
-                <strong>Safari:</strong> Enable WebGPU in Develop menu
+                <strong>Chrome/Edge:</strong> DevTools (F12) → ⚙️ Settings → Experiments → Enable "Unsafe WebGPU"<br>
+                <strong>Firefox:</strong> about:config → dom.webgpu.enabled = true<br>
+                <strong>Safari:</strong> Develop → WebGPU Experimental Features
             </small>
         `;
         document.body.appendChild(helpMsg);
